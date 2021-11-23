@@ -395,7 +395,7 @@ func ParseCrossQuery(tx *lpb.Transaction) ([]*pb.CrossQueryInfo, error) {
 		}
 	}
 	if queryInfos != nil {
-		err := UnmsarshalMessages(queryInfos, &crossQueryInfos)
+		err := xmodel.UnmsarshalMessages(queryInfos, &crossQueryInfos)
 		if err != nil {
 			return nil, err
 		}
@@ -414,7 +414,7 @@ func (xc *XMCache) putCrossQueries(queryInfos []*pb.CrossQueryInfo) error {
 	var qi []byte
 	var err error
 	if len(queryInfos) != 0 {
-		qi, err = MarshalMessages(queryInfos)
+		qi, err = xmodel.MarshalMessages(queryInfos)
 		if err != nil {
 			return err
 		}
