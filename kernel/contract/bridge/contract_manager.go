@@ -273,6 +273,10 @@ func verifyCode(kctx contract.KContext, contractName string) ([]byte, contract.L
 	if err != nil {
 		return nil, contract.Limits{}, err
 	}
+
+	if code == nil {
+		return nil, contract.Limits{}, errors.New("missing contract code")
+	}
 	// 校验合约 code的hash,是否和记录只一致
 	codeHash := sm3.Sm3Sum(code)
 
