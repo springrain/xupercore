@@ -15,6 +15,7 @@ logs/
 *.o
 *.so
 *.d
+go.sum
 
 # OSX trash
 .DS_Store
