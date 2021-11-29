@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -274,7 +275,8 @@ func verifyCode(kctx contract.KContext, contractName string) ([]byte, contract.L
 	}
 	// 校验合约 code的hash,是否和记录只一致
 	codeHash := sm3.Sm3Sum(code)
-	if string(contractHash) != string(codeHash) {
+
+	if string(contractHash) != hex.EncodeToString(codeHash) {
 		return nil, contract.Limits{}, errors.New("contract hash  error")
 	}
 	return code, contract.Limits{}, nil
