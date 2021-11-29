@@ -25,16 +25,35 @@ func (c *contractManager) DeployContract(kctx contract.KContext) (*contract.Resp
 	if name == nil {
 		return nil, contract.Limits{}, errors.New("bad contract name")
 	}
+	// 直接使用Get接口,应该是可以绕过合约调用,直接取值,这样不知道有什么风险没
+	// b, err2 := kctx.Get("合约名,例如 合约发布记录", []byte("合约内put的key(contractName_hash) 例如 test6_hash,返回hash"))
+
+	//r, err2 := kctx.Call("native", "fabujilu", "Get", map[string][]byte{"contract_name": name})
+
 	contractName := string(name)
 	_, err := c.codeProvider.GetContractCodeDesc(contractName)
 	if err == nil {
 		return nil, contract.Limits{}, fmt.Errorf("contract %s already exists", contractName)
 	}
+	var code []byte = nil
+	// 增加contract_hash变量,回传合约hash.优先级大于 contract_code,避免出现脏读场景,hash回传类似乐观锁
+	// 服务器编译 --> 返回给SDK合约文件的hash --> SDK发布合约--> 回传hash --> 读取校验合约记录的hash --> 发布合约
+	contract_hash := args["contract_hash"]
+	if contract_hash != nil {
+		// 根据contract_name查询获取记录的文件路径和hash
+		// 校验合约文件的hash(从 发布记录合约 中 query 合约的hash),如果hash校验失败,不允许发布
+		// 暂时未实现
+		// 直接使用Get接口,应该是可以绕过合约调用,直接取值,这样不知道有什么风险没
+		// b, err2 := kctx.Get("合约名,例如 合约发布记录", []byte("合约内put的key(contractName_hash) 例如 test6_hash,返回hash"))
+		// r, err2 := kctx.Call("native", "fabujilu", "Get", map[string][]byte{"contract_name": name})
 
-	code := args["contract_code"]
+	} else {
+		code = args["contract_code"]
+	}
 	if code == nil {
 		return nil, contract.Limits{}, errors.New("missing contract code")
 	}
+
 	initArgsBuf := args["init_args"]
 	if initArgsBuf == nil {
 		return nil, contract.Limits{}, errors.New("missing args field in args")
@@ -144,10 +163,25 @@ func (c *contractManager) UpgradeContract(kctx contract.KContext) (*contract.Res
 		return nil, contract.Limits{}, fmt.Errorf("contract %s not exists", contractName)
 	}
 
-	code := args["contract_code"]
+	var code []byte = nil
+	// 增加contract_hash变量,回传合约hash.优先级大于 contract_code,避免出现脏读场景,hash回传类似乐观锁
+	// 服务器编译 --> 返回给SDK合约文件的hash --> SDK发布合约--> 回传hash --> 读取校验合约记录的hash --> 发布合约
+	contract_hash := args["contract_hash"]
+	if contract_hash != nil {
+		// 根据contract_name查询获取记录的文件路径和hash
+		// 校验合约文件的hash(从 发布记录合约 中 query 合约的hash),如果hash校验失败,不允许发布
+		// 暂时未实现
+		// 直接使用Get接口,应该是可以绕过合约调用,直接取值,这样不知道有什么风险没
+		// b, err2 := kctx.Get("合约名,例如 合约发布记录", []byte("合约内put的key(contractName_hash) 例如 test6_hash,返回hash"))
+		// r, err2 := kctx.Call("native", "fabujilu", "Get", map[string][]byte{"contract_name": name})
+
+	} else {
+		code = args["contract_code"]
+	}
 	if code == nil {
 		return nil, contract.Limits{}, errors.New("missing contract code")
 	}
+
 	desc.Digest = hash.DoubleSha256(code)
 	descbuf, _ := proto.Marshal(desc)
 
