@@ -1,16 +1,22 @@
 package bridge
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 
+	"github.com/tjfoc/gmsm/sm3"
 	"github.com/xuperchain/crypto/core/hash"
 	"github.com/xuperchain/xupercore/kernel/contract"
 	"github.com/xuperchain/xupercore/protos"
 
 	"github.com/golang/protobuf/proto"
 )
+
+// 合约部署记录
+const x_contract_log string = "x_contract_log"
 
 type contractManager struct {
 	xbridge      *XBridge
@@ -31,10 +37,20 @@ func (c *contractManager) DeployContract(kctx contract.KContext) (*contract.Resp
 		return nil, contract.Limits{}, fmt.Errorf("contract %s already exists", contractName)
 	}
 
-	code := args["contract_code"]
+	var code []byte
+	if x_contract_log == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
+		code = args["contract_code"]
+	} else { //校验合约的code代码
+		var err error
+		code, _, err = verifyCode(kctx, contractName)
+		if err != nil {
+			return nil, contract.Limits{}, err
+		}
+	}
 	if code == nil {
 		return nil, contract.Limits{}, errors.New("missing contract code")
 	}
+
 	initArgsBuf := args["init_args"]
 	if initArgsBuf == nil {
 		return nil, contract.Limits{}, errors.New("missing args field in args")
@@ -144,10 +160,20 @@ func (c *contractManager) UpgradeContract(kctx contract.KContext) (*contract.Res
 		return nil, contract.Limits{}, fmt.Errorf("contract %s not exists", contractName)
 	}
 
-	code := args["contract_code"]
+	var code []byte
+	if x_contract_log == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
+		code = args["contract_code"]
+	} else { //校验合约的code代码
+		var err error
+		code, _, err = verifyCode(kctx, contractName)
+		if err != nil {
+			return nil, contract.Limits{}, err
+		}
+	}
 	if code == nil {
 		return nil, contract.Limits{}, errors.New("missing contract code")
 	}
+
 	desc.Digest = hash.DoubleSha256(code)
 	descbuf, _ := proto.Marshal(desc)
 
@@ -218,4 +244,40 @@ func getContractType(desc *protos.WasmCodeDesc) (ContractType, error) {
 	default:
 		return "", fmt.Errorf("unknown contract type:%s", desc.ContractType)
 	}
+}
+
+// 校验合约的code的hash值
+func verifyCode(kctx contract.KContext, contractName string) ([]byte, contract.Limits, error) {
+	// 增加contract_hash变量,回传合约hash.优先级大于 contract_code,避免出现脏读场景,hash回传类似乐观锁
+	// 服务器编译 --> 返回给SDK合约文件的hash --> SDK发布合约--> 回传hash --> 读取校验合约记录的hash --> 发布合约
+	contract_hash := kctx.Args()["contract_code"]
+	if contract_hash == nil {
+		return nil, contract.Limits{}, errors.New("missing contract code")
+	}
+	// 根据contract_name查询获取记录的文件路径和hash
+	// 校验合约文件的hash(从 发布记录合约 中 query 合约的hash),如果hash校验失败,不允许发布
+	// 直接使用Get接口,可以绕过合约调用,直接取值
+	// 获取合约的Hash值
+	contractHash, err := kctx.Get(x_contract_log, []byte(contractName+"_hash"))
+	if err != nil || contractHash == nil {
+		return nil, contract.Limits{}, errors.New("missing contract code")
+	}
+	if string(contract_hash) != string(contractHash) {
+		return nil, contract.Limits{}, errors.New("contract hash  error")
+	}
+	contractPath, err := kctx.Get(x_contract_log, []byte(contractName+"_path"))
+	if err != nil || contractPath == nil {
+		return nil, contract.Limits{}, err
+	}
+	code, err := ioutil.ReadFile(string(contractPath))
+	if err != nil {
+		return nil, contract.Limits{}, err
+	}
+	// 校验合约 code的hash,是否和记录只一致
+	codeHash := sm3.Sm3Sum(code)
+
+	if string(contractHash) != hex.EncodeToString(codeHash) {
+		return nil, contract.Limits{}, errors.New("contract hash  error")
+	}
+	return code, contract.Limits{}, nil
 }
