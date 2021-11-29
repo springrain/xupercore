@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/tjfoc/gmsm/sm3"
 	"github.com/xuperchain/crypto/core/hash"
 	"github.com/xuperchain/xupercore/kernel/contract"
 	"github.com/xuperchain/xupercore/protos"
@@ -271,6 +272,10 @@ func verifyCode(kctx contract.KContext, contractName string) ([]byte, contract.L
 	if err != nil {
 		return nil, contract.Limits{}, err
 	}
-
+	// 校验合约 code的hash,是否和记录只一致
+	codeHash := sm3.Sm3Sum(code)
+	if string(contractHash) != string(codeHash) {
+		return nil, contract.Limits{}, errors.New("contract hash  error")
+	}
 	return code, contract.Limits{}, nil
 }
