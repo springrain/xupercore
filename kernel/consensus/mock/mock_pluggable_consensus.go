@@ -371,6 +371,10 @@ func (c *FakeKContext) CrossQuery(crossQueryRequest *pb.CrossQueryRequest, query
 	return nil, nil
 }
 
+func (c *FakeKContext) CrossQueryCache(crossQueries []*pb.CrossQueryInfo) {
+	//return
+}
+
 type FakeManager struct {
 	R *FakeRegistry
 }
