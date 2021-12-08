@@ -38,7 +38,8 @@ func (c *contractManager) DeployContract(kctx contract.KContext) (*contract.Resp
 	}
 
 	var code []byte
-	if x_contract_log == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
+	//if x_contract_log == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
+	if len(args["contract_code"]) > 32 || x_contract_log == contractName { //如果长度大于32,认为是合约的二进制文件,用于兼容老的方式
 		code = args["contract_code"]
 	} else { //校验合约的code代码
 		var err error
