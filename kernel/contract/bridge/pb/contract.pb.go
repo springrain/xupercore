@@ -504,6 +504,13 @@ func (x *CallArgs) GetTransferAmount() string {
 	return ""
 }
 
+func (m *CallArgs) GetCaller() string {
+	if m != nil {
+		return m.Caller
+	}
+	return ""
+}
+
 type SyscallHeader struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
