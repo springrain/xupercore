@@ -116,6 +116,7 @@ func (c *contractManager) DeployContract(kctx contract.KContext) (*contract.Resp
 		ContractName:          contractName,
 		CanInitialize:         true,
 		ContractCodeFromCache: true,
+		// ChainName: c.xbridge.config.,
 	}
 	initConfig.ContractName = contractName
 	initConfig.CanInitialize = true
