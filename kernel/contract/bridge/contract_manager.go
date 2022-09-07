@@ -16,7 +16,7 @@ import (
 )
 
 // 合约部署记录
-const x_contract_log string = "x_contract_log"
+const x_compile_contract string = "x_compile_contract"
 
 type contractManager struct {
 	xbridge      *XBridge
@@ -38,7 +38,7 @@ func (c *contractManager) DeployContract(kctx contract.KContext) (*contract.Resp
 	}
 
 	var code []byte
-	//if x_contract_log == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
+	//if x_compile_contract == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
 	if len(args["contract_code"]) > 64 { //如果长度大于64,认为是合约的二进制文件,用于兼容老的方式
 		code = args["contract_code"]
 	} else { //校验合约的code代码
@@ -163,7 +163,7 @@ func (c *contractManager) UpgradeContract(kctx contract.KContext) (*contract.Res
 	}
 
 	var code []byte
-	//if x_contract_log == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
+	//if x_compile_contract == contractName { //如果是合约发布记录,这个特殊合约可以使用文件code进行发布,其他的都是需要传递hash值发布
 	if len(args["contract_code"]) > 64 { //如果长度大于64,认为是合约的二进制文件,用于兼容老的方式
 		code = args["contract_code"]
 	} else { //校验合约的code代码
@@ -261,14 +261,14 @@ func verifyCode(kctx contract.KContext, contractName string) ([]byte, contract.L
 	// 校验合约文件的hash(从 发布记录合约 中 query 合约的hash),如果hash校验失败,不允许发布
 	// 直接使用Get接口,可以绕过合约调用,直接取值
 	// 获取合约的Hash值
-	contractHash, err := kctx.Get(x_contract_log, []byte(contractName+"_hash"))
+	contractHash, err := kctx.Get(x_compile_contract, []byte(contractName+"_hash"))
 	if err != nil || contractHash == nil {
 		return nil, contract.Limits{}, errors.New("missing contract code")
 	}
 	if string(contract_hash) != string(contractHash) {
 		return nil, contract.Limits{}, errors.New("contract hash  error")
 	}
-	contractPath, err := kctx.Get(x_contract_log, []byte(contractName+"_path"))
+	contractPath, err := kctx.Get(x_compile_contract, []byte(contractName+"_path"))
 	if err != nil || contractPath == nil {
 		return nil, contract.Limits{}, err
 	}
