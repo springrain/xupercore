@@ -6,7 +6,7 @@ const (
 )
 
 const (
-	accountSize            = 16
+	accountNumberSize      = 16
 	contractNameMaxSize    = 64
 	contractNameMinSize    = 4
 	accountPrefix          = "XC"
