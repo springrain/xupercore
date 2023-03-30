@@ -87,16 +87,21 @@ func (c *contractProcess) makeNativeProcess() (Process, error) {
 
 // wait the subprocess to be ready
 func (c *contractProcess) waitReply() error {
-	const waitTimeout = 2 * time.Second
+	const waitTimeout = pingTimeoutSecond * time.Second
+	//now := time.Now()
 	ctx, cancel := context.WithTimeout(context.TODO(), waitTimeout)
 	defer cancel()
 	for {
 		_, err := c.rpcClient.Ping(ctx, new(pb.PingRequest))
 		if err == nil {
+			//m := time.Since(now).Milliseconds()
+			//fmt.Println("aaaaaaaaa-发布合约成功耗时毫秒:" + strconv.FormatInt(m, 10))
 			return nil
 		}
 		select {
 		case <-ctx.Done():
+			//m := time.Since(now).Milliseconds()
+			//fmt.Println("aaaaaaaaa-发布合约失败耗时毫秒:" + strconv.FormatInt(m, 10))
 			return fmt.Errorf("waiting native code start timeout. error:%s", err)
 		default:
 		}
