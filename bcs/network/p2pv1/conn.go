@@ -48,8 +48,12 @@ func (c *Conn) newClient() (pb.P2PServiceClient, error) {
 	state := c.conn.GetState()
 	if state == connectivity.TransientFailure || state == connectivity.Shutdown {
 		c.log.Error("newClient conn state not ready", "id", c.id, "state", state.String())
-		c.Close()
-		err := c.newConn()
+		err := c.Close()
+		if err != nil {
+			c.log.Error("newClient close error", "id", c.id, "error", err)
+			return nil, err
+		}
+		err = c.newConn()
 		if err != nil {
 			c.log.Error("newClient newGrpcConn error", "id", c.id, "error", err)
 			return nil, err
@@ -155,9 +159,9 @@ func (c *Conn) SendMessageWithResponse(ctx xctx.XContext, msg *pb.XuperMessage) 
 }
 
 // Close close this conn
-func (c *Conn) Close() {
+func (c *Conn) Close() error {
 	c.log.Info("Conn Close", "peerID", c.id)
-	c.conn.Close()
+	return c.conn.Close()
 }
 
 // GetConnID return conn id
